@@ -8,10 +8,11 @@
 
 char *commandType();
 char *parseCommand();
+char *outputFileName(char *fname);
 
 
 int main(int argc, char *argv[]) {
-  FILE *fp;
+  FILE *fp, *ofp;
 
   if(argc != 2) {
 	printf("No asm files selected\n");
@@ -23,21 +24,33 @@ int main(int argc, char *argv[]) {
 	exit(1);
   }
 
+  if((ofp = fopen("out.hack", "w")) == NULL) {
+	printf("Cannot open the output file");
+	exit(1);
+  }
+
   while(fgets(buf, sizeof(buf), fp) != NULL) {
 	memset(cmd, '\0', sizeof(cmd));
 	parseCommand();
 	if(cmd[0] == '\0')
 	  continue;
 
-	printf("%s", cmd);
-	if(!strcmp(commandType(cmd), "C_COMMAND")) {
-	  printf("dest: %s, comp: %s, jump: %s\n", destMnemonic(), compMnemonic(), jumpMnemonic());
-	  printf("dest: %s, comp: %s, jump: %s\n", convertDest(destMnemonic()), convertComp(compMnemonic()), convertJump(jumpMnemonic()));
-	}
+	//printf("%s", cmd);
 	//printf("type: %s\n", commandType(cmd));
+	if(!strcmp(commandType(cmd), "C_COMMAND")) {
+	  char *dest = destMnemonic();
+	  char *comp = compMnemonic();
+	  char *jump = jumpMnemonic();
+	  fprintf(ofp, "111%s%s%s\n", convertComp(comp), convertDest(dest), convertJump(jump));
+	  //printf("dest: %s, comp: %s, jump: %s\n", destMnemonic(), compMnemonic(), jumpMnemonic());
+	  //printf("dest: %s, comp: %s, jump: %s\n", convertDest(destMnemonic()), convertComp(compMnemonic()), convertJump(jumpMnemonic()));
+	}
   }
 
+  printf("Complete!\n");
+
   fclose(fp);
+  fclose(ofp);
   return 0;
 }
 
@@ -61,4 +74,13 @@ char *parseCommand() {
   }
   if(cmd[0] == '\n') cmd[0] = '\0';
   return cmd;
+}
+
+char *outputFileName(char *fname) {
+  int cur = 0;
+  char *output = malloc(1024);
+  while(cur < strlen(fname) && fname[cur] != '.')
+	output[cur] = fname[cur++];
+  strcat(output, ".hack");
+  return output;
 }
