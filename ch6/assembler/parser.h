@@ -2,6 +2,7 @@
 #define _INCLUDE_PARSER_H_
 
 char *commandType();
+char *symbol();
 char *destMnemonic();
 char *compMnemonic();
 char *jumpMnemonic();

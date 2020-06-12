@@ -5,6 +5,8 @@
 #include "sub.h"
 #include "parser.h"
 #include "code.h"
+#include "symbol.h"
+#include "map.h"
 
 char *commandType();
 char *parseCommand();
@@ -44,6 +46,12 @@ int main(int argc, char *argv[]) {
 	  fprintf(ofp, "111%s%s%s\n", convertComp(comp), convertDest(dest), convertJump(jump));
 	  //printf("dest: %s, comp: %s, jump: %s\n", destMnemonic(), compMnemonic(), jumpMnemonic());
 	  //printf("dest: %s, comp: %s, jump: %s\n", convertDest(destMnemonic()), convertComp(compMnemonic()), convertJump(jumpMnemonic()));
+	}else{
+	  char *bin;
+	  if((bin = convertBin(symbol())) != NULL)
+		fprintf(ofp, "%s\n", bin);
+	  else{
+	  }
 	}
   }
 

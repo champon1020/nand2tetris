@@ -8,6 +8,16 @@ char *commandType() {
   return "C_COMMAND";
 }
 
+char *symbol() {
+  char *res = malloc(1024);
+  int cur = 1;
+  while(cur < strlen(cmd) && cmd[cur] != '\n' && cmd[cur] != ')'){
+	res[cur-1] = cmd[cur];
+	cur++;
+  }
+  return res;
+}
+
 char *destMnemonic() {
   if(strstr(cmd, "=") == NULL)
 	return "";
