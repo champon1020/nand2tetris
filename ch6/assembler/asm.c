@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "map.h"
 #include "sub.h"
 #include "parser.h"
 #include "code.h"
 #include "symbol.h"
-#include "map.h"
 
 char *commandType();
 char *parseCommand();
@@ -31,6 +31,29 @@ int main(int argc, char *argv[]) {
 	exit(1);
   }
 
+  int line = 0;
+  char cntStr[1024];
+  char *key;
+  initSymbolMap();
+
+  while(fgets(buf, sizeof(buf), fp) != NULL) {
+	memset(cmd, '\0', sizeof(cmd));
+	parseCommand();
+	if(cmd[0] == '\0')
+	  continue;
+
+	if(!strcmp(commandType(cmd), "L_COMMAND")){
+	  char *symb = symbol();
+	  sprintf(cntStr, "%d", line);
+	  insert(symb, convertBin(cntStr));
+	  continue;
+	}
+	line++;
+  }
+
+  fseek(fp, 0L, SEEK_SET);
+
+  int cnt = 16;
   while(fgets(buf, sizeof(buf), fp) != NULL) {
 	memset(cmd, '\0', sizeof(cmd));
 	parseCommand();
@@ -46,11 +69,21 @@ int main(int argc, char *argv[]) {
 	  fprintf(ofp, "111%s%s%s\n", convertComp(comp), convertDest(dest), convertJump(jump));
 	  //printf("dest: %s, comp: %s, jump: %s\n", destMnemonic(), compMnemonic(), jumpMnemonic());
 	  //printf("dest: %s, comp: %s, jump: %s\n", convertDest(destMnemonic()), convertComp(compMnemonic()), convertJump(jumpMnemonic()));
-	}else{
+	}else if(!strcmp(commandType(cmd), "A_COMMAND")) {
+	  char *symb = symbol();
 	  char *bin;
-	  if((bin = convertBin(symbol())) != NULL)
+	  if((bin = convertBin(symb)) != NULL)
 		fprintf(ofp, "%s\n", bin);
 	  else{
+		Node *u;
+		if((u = find(symb)) != NIL)
+		  fprintf(ofp, "%s\n", u->val);
+		else{
+		  sprintf(cntStr, "%d", cnt++);
+		  bin = convertBin(cntStr);
+		  fprintf(ofp, "%s\n", bin);
+		  insert(symb, bin);
+		}
 	  }
 	}
   }

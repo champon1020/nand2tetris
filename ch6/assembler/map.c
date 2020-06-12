@@ -1,19 +1,14 @@
 #include <string.h>
 #include <stdlib.h>
+#include "sub.h"
 
-typedef struct _node {
-  char *key;
-  struct _node *par, *left, *right;
-} Node;
-
-Node *root, *NIL;
-
-void insert(char *k) {
+void insert(char *k, char *v) {
   Node *cur = root;
   Node *pre = NIL;
   Node *x = malloc(sizeof(Node));
 
   x->key = k;
+  x->val = v;
   x->left = NIL;
   x->right = NIL;
 
@@ -34,12 +29,12 @@ void insert(char *k) {
 	  pre->left = x;
 	else
 	  pre->right = x;
-  }	
+  }
 }
 
 Node *find(char *k){
   Node *cur = root;
-  while(cur != NIL && k != cur->key){
+  while(cur != NIL && strcmp(k, cur->key)){
 	if(strcmp(k, cur->key) < 0)
 	  cur = cur->left;
 	else
