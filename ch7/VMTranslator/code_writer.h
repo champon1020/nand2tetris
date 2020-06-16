@@ -1,0 +1,4 @@
+#ifndef _INCLUDE_CODE_WRITER_H_
+#define _INCLUDE_CODE_WRITER_H_
+
+#endif //_INCLUDE_CODE_WRITER_H_
