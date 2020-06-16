@@ -7,6 +7,51 @@
 
 char buf[4096];
 
+char *basename(char *p){
+  int cur = 0, slcnt = 0;
+  while(cur < strlen(p)){
+	if(p[cur++] == '/') slcnt++;
+  }
+  
+  cur = 0;
+  int pos = 0;
+  char *res = malloc(sizeof(p));
+  while(cur < strlen(p)){
+	if(p[cur] == '/'){
+	  --slcnt; ++cur;
+	  continue;
+	}
+	if(!slcnt){
+	  res[pos++] = p[cur];
+	}
+	++cur;
+  }
+  
+  return res;
+}
+
+char *dirname(char *p){
+  int cur = 0, slcnt = 0;
+  while(cur < strlen(p)){
+	if(p[cur++] == '/') slcnt++;
+  }
+
+  cur = 0;
+  int pos = 0;
+  char *res = malloc(sizeof(p));
+  while(cur < strlen(p)){
+	if(p[cur] == '/'){
+	  --slcnt;
+	}
+	if(slcnt){
+	  res[pos++] = p[cur];
+	}
+	++cur;
+  }
+
+  return res;
+}
+
 void parseCommand(){
   int cur = 0, len = strlen(buf);
 
@@ -53,10 +98,13 @@ int main(int argc, char *argv[]) {
 
   if(strcspn(argv[1], ".vm") == strlen(argv[1])){
 	printf("Process directory\n");
+
 	// process files in the directory
   }else{
-	// process one file
 	printf("Process file\n");
+	printf("dirname: %s, basename: %s\n", dirname(argv[1]), basename(argv[1]));
+
+	// Process one file.
 	process(argv[1]);
   }
 
