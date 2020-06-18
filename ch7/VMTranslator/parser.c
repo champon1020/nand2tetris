@@ -21,7 +21,6 @@ char *strSegment(char *s, int num){
   }
   
   if(spcnt < num) return NULL;
-  
   return res;
 }
 
@@ -64,6 +63,10 @@ char *commandType() {
 
   printf("Command is not defined\n");
   exit(1);
+}
+
+char *arg0() {
+  return strSegment(cmd, 0);
 }
 
 char *arg1() {

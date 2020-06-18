@@ -2,6 +2,7 @@
 #define _INCLUDE_PARSER_H_
 
 char *commandType();
+char *arg0();
 char *arg1();
 char *arg2();
 

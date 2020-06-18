@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "sub.h"
 #include "parser.h"
+#include "code_writer.h"
 
 char buf[4096];
 
@@ -38,7 +39,7 @@ char *dirname(char *p){
 
   cur = 0;
   int pos = 0;
-  char *res = malloc(sizeof(p));
+  char *res = malloc(sizeof(p)*sizeof(char *));
   while(cur < strlen(p)){
 	if(p[cur] == '/'){
 	  --slcnt;
@@ -59,15 +60,13 @@ void parseCommand(){
   while(cur < len && isspace(buf[cur])) cur++;
 
   int pos = 0;
-  while(cur < len){
+  while(cur < len && buf[cur] != '\n'){
 	if(buf[cur] == '/' && buf[cur+1] == '/'){
-	  cmd[pos] = '\n';
+	  cmd[pos] = '\0';
 	  break;
 	}
 	cmd[pos++] = buf[cur++];
   }
-
-  if(cmd[0] == '\n') cmd[0] = '\0';
 }
 
 void process(char *fileName) {
@@ -77,17 +76,50 @@ void process(char *fileName) {
 	printf("Cannot open file '%s'\n", fileName);
 	exit(1);
   }
-  
+
   while(fgets(buf, sizeof(buf), fp) != NULL){
 	memset(cmd, '\0', sizeof(cmd));
 	parseCommand();
 	if(cmd[0] == '\0')
 	  continue;
 
-	printf("%s %s %s\n", commandType(), arg1(), arg2());
+	char *cmdType = commandType();
+	char *arg1_ = arg1();
+	char *arg2_ = arg2();
+	printf("Command-Type: %-15s arg1: %-15s arg2: %-15s\n", cmdType, arg1_, arg2_);
+	if(!strcmp(cmdType, "C_ARTHMETIC")){
+	  writeArthmetic(arg0());
+	}
+	if(!strcmp(cmdType, "C_PUSH") ||
+	   !strcmp(cmdType, "C_POP")){
+	  writePushPop(arg0(), arg1_, atoi(arg2_));
+	}
   }
 
   fclose(fp);
+}
+
+char *oFileName(char *dirname, char *basename){
+  char *outputFileName = malloc(2048);
+  int cur = 0, pos = 0;
+  while(cur < strlen(dirname)){
+	outputFileName[pos++] = dirname[cur++];
+  }
+
+  outputFileName[pos++] = '/';
+  
+  cur = 0;
+  while(cur < strlen(basename) && basename[cur] != '.'){
+	outputFileName[pos++] = basename[cur++];
+  }
+  
+  cur = 0;
+  char *extend = ".asm";
+  while(cur < strlen(extend)){
+	outputFileName[pos++] = extend[cur++];
+  }
+  
+  return outputFileName;
 }
 
 int main(int argc, char *argv[]) {
@@ -96,17 +128,27 @@ int main(int argc, char *argv[]) {
 	exit(1);
   }
 
-  if(strcspn(argv[1], ".vm") == strlen(argv[1])){
-	printf("Process directory\n");
+  char *fileName = argv[1];
+  char *outputFileName = oFileName(dirname(fileName), basename(fileName));
 
-	// process files in the directory
+  labelCnt = 0;
+  if((ofp = fopen(outputFileName, "w")) == NULL){
+	printf("Cannot open output file %s\n", outputFileName);
+	exit(1);
+  }
+
+  if(strcspn(argv[1], ".vm") == strlen(fileName)){
+	printf("Process directory\n");
   }else{
 	printf("Process file\n");
-	printf("dirname: %s, basename: %s\n", dirname(argv[1]), basename(argv[1]));
-
-	// Process one file.
-	process(argv[1]);
+	process(fileName);
+	fprintf(ofp, "(END)\n@END\n0;JMP\n");
   }
+
+  printf("Complete!\n");
+  printf("Output at %s\n", outputFileName);
+
+  fclose(ofp);
 
   return 0;
 }
