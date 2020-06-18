@@ -77,6 +77,8 @@ void process(char *fileName) {
 	exit(1);
   }
 
+  currentBaseName = basename(fileName);
+
   while(fgets(buf, sizeof(buf), fp) != NULL){
 	memset(cmd, '\0', sizeof(cmd));
 	parseCommand();
@@ -99,7 +101,7 @@ void process(char *fileName) {
   fclose(fp);
 }
 
-char *oFileName(char *dirname, char *basename){
+char *oFileName(char *dirname){
   char *outputFileName = malloc(2048);
   int cur = 0, pos = 0;
   while(cur < strlen(dirname)){
@@ -108,9 +110,10 @@ char *oFileName(char *dirname, char *basename){
 
   outputFileName[pos++] = '/';
   
+  char *base = basename(dirname);
   cur = 0;
-  while(cur < strlen(basename) && basename[cur] != '.'){
-	outputFileName[pos++] = basename[cur++];
+  while(cur < strlen(base)){
+	outputFileName[pos++] = base[cur++];
   }
   
   cur = 0;
@@ -129,7 +132,7 @@ int main(int argc, char *argv[]) {
   }
 
   char *fileName = argv[1];
-  char *outputFileName = oFileName(dirname(fileName), basename(fileName));
+  char *outputFileName = oFileName(dirname(fileName));
 
   labelCnt = 0;
   if((ofp = fopen(outputFileName, "w")) == NULL){

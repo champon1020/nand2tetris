@@ -64,11 +64,18 @@ void pushCmd(char *seg, int index){
 	pushOnStack();
 	return;
   }
-  if(!strcmp(seg, "temp"))
+
+  if(!strcmp(seg, "static")){
+	fprintf(ofp, "@%s.%d\nD=M\n", currentBaseName, index);
+	pushOnStack();
+	return;
+  }
+  
+  if(!strcmp(seg, "temp")){
 	fprintf(ofp, "@%d\n", 5);
-  else if(!strcmp(seg, "pointer"))
+  }else if(!strcmp(seg, "pointer")){
     fprintf(ofp, "@%d\n", 3);
-  else{
+  }else{
     fprintf(ofp, "@%s\n", getSymbol(seg));
 	fprintf(ofp, "A=M\n");
   }
@@ -80,12 +87,17 @@ void pushCmd(char *seg, int index){
 void popCmd(char *seg, int index){
   popOnStack();
   fprintf(ofp, "D=M\n");
+
+  if(!strcmp(seg, "static")){
+	fprintf(ofp, "@%s.%d\nM=D\n", currentBaseName, index);
+	return;
+  }
   
-  if(!strcmp(seg, "temp"))
+  if(!strcmp(seg, "temp")){
 	fprintf(ofp, "@%d\n", 5);
-  else if(!strcmp(seg, "pointer"))
+  }else if(!strcmp(seg, "pointer")){
     fprintf(ofp, "@%d\n", 3);
-  else{
+  }else{
     fprintf(ofp, "@%s\n", getSymbol(seg));
 	fprintf(ofp, "A=M\n");
   }
