@@ -5,7 +5,9 @@
 
 void pushCmd(char *seg, int index);
 void popCmd(char *seg, int index);
+char *getSymbol(char *seg);
 void calcOp(char *cmd);
+void incrementAddress(int index);
 void pushOnStack();
 void popOnStack();
 
@@ -59,11 +61,56 @@ void writePushPop(char *cmd, char *seg, int index){
 void pushCmd(char *seg, int index){
   if(!strcmp(seg, "constant")){
 	fprintf(ofp, "@%d\nD=A\n", index);
+	pushOnStack();
+	return;
   }
+  if(!strcmp(seg, "temp"))
+	fprintf(ofp, "@%d\n", 5);
+  else if(!strcmp(seg, "pointer"))
+    fprintf(ofp, "@%d\n", 3);
+  else{
+    fprintf(ofp, "@%s\n", getSymbol(seg));
+	fprintf(ofp, "A=M\n");
+  }
+  incrementAddress(index);
+  fprintf(ofp, "D=M\n");
   pushOnStack();
 }
 
 void popCmd(char *seg, int index){
+  popOnStack();
+  fprintf(ofp, "D=M\n");
+  
+  if(!strcmp(seg, "temp"))
+	fprintf(ofp, "@%d\n", 5);
+  else if(!strcmp(seg, "pointer"))
+    fprintf(ofp, "@%d\n", 3);
+  else{
+    fprintf(ofp, "@%s\n", getSymbol(seg));
+	fprintf(ofp, "A=M\n");
+  }
+  incrementAddress(index);
+  fprintf(ofp, "M=D\n");
+}
+
+char *getSymbol(char *seg){
+  if(!strcmp(seg, "local"))
+	return "LCL";
+  if(!strcmp(seg, "argument"))
+	return "ARG";
+  if(!strcmp(seg, "this"))
+	return "THIS";
+  if(!strcmp(seg, "that"))
+	return "THAT";
+
+  printf("Symbol is not valid: %s\n", seg);
+  exit(1);
+}
+
+void incrementAddress(int index){
+  for(int i=0; i<index; i++){
+	fprintf(ofp, "A=A+1\n");
+  }
 }
 
 void calcOp(char *op){
