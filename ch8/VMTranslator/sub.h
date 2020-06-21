@@ -7,5 +7,8 @@ char cmd[4096];
 FILE *ofp;
 char *currentBaseName;
 int labelCnt;
+int returnCnt;
+
+void initialize();
 
 #endif //_INCLUDE_SUB_H
