@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <ctype.h>
 #include <dirent.h>
+#include "sub.h"
+#include "tokenizer.h"
 
 void allocateString(char *src, char *org, int start){
   int cur = 0;
@@ -85,6 +89,61 @@ int endWith(char *str, char *suffix){
   return !strcmp(ext, suffix);
 }
 
+bool isComment = false;
+char buf[4096];
+
+void modifyCommand(){
+  int cur = 0, len = strlen(buf);
+  while(cur < len && isspace(buf[cur])) ++cur;
+  
+  int pos = 0;
+  while(cur < len && buf[cur] != '\n'){
+	if(buf[cur] == '/' && buf[cur+1] == '*'){
+	  isComment = true;
+	  cur += 2;
+	  continue;
+	}
+	if(buf[cur] == '*' && buf[cur+1] == '/'){
+	  isComment = false;
+	  memset(cmd, '\0', sizeof(cmd));
+	  cur += 2;
+	  continue;
+	}
+	if(buf[cur] == '/' && buf[cur+1] == '/'){
+	  buf[cur] = '\0';
+	  break;
+	}
+
+	cmd[pos++] = buf[cur++];
+  }
+}
+
+void process(char *fileName){
+  FILE *fp;
+  if((fp = fopen(fileName, "r")) == NULL){
+	printf("Failed to open file\n");
+	exit(1);
+  }
+
+  while(fgets(buf, sizeof(buf), fp) != NULL){
+	memset(cmd, '\0', sizeof(cmd));
+	modifyCommand();
+	if(isComment)
+	  continue;
+	if(cmd[0] == '\0')
+	  continue;
+
+	printf("[COMMAND]: %s\n", cmd);
+	initTokenizer();
+	while(hasMoreToken()){
+	  char *tknType = tokenType();
+	  if(!strcmp(tknType, "NULL"))
+		continue;
+	  printf("%s\n", tknType);
+	}
+  }
+}
+
 int main(int argc, char *argv[]){
   if(argc != 2){
 	printf("The number of arguments must be one, source name\n");
@@ -96,7 +155,7 @@ int main(int argc, char *argv[]){
 	char *outputFileName = malloc(sizeof(char *) * 100);
 	setOutputFileName(dirname(fileName), outputFileName);
 
-	// some process
+	process(fileName);
 	
 	printf("FILE: %s, OUTPUT: %s\n", fileName, outputFileName);
   }else{
