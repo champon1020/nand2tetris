@@ -8,6 +8,8 @@ void initTokenizer();
 bool hasMoreToken();
 bool checkSymbol(char c);
 bool checkKeyword(char *s);
+int readNextCommand();
+void advance();
 char *tokenType();
 char *keyWord();
 
@@ -85,16 +87,61 @@ bool checkIsNumber(char *s) {
 }
 
 bool isStr = false;
+bool isComment = false;
+char buf[4096];
 
-char *tokenType() {
-  int pos = 0, len = strlen(cmd);
+void modifyCommand(){
+  int cur = 0, len = strlen(buf);
+  while(cur < len && isspace(buf[cur])) ++cur;
+  
+  int pos = 0;
+  while(cur < len && buf[cur] != '\n'){
+	if(buf[cur] == '/' && buf[cur+1] == '*'){
+	  isComment = true;
+	  cur += 2;
+	  continue;
+	}
+	if(buf[cur] == '*' && buf[cur+1] == '/'){
+	  isComment = false;
+	  memset(cmd, '\0', sizeof(cmd));
+	  cur += 2;
+	  continue;
+	}
+	if(buf[cur] == '/' && buf[cur+1] == '/'){
+	  buf[cur] = '\0';
+	  break;
+	}
+	cmd[pos++] = buf[cur++];
+  }
+}
+
+int readNextCommand() {
+  if(fgets(buf, sizeof(buf), fp) != NULL) {
+	memset(cmd, '\0', sizeof(cmd));
+	modifyCommand();
+	if(isComment || cmd[0] == '\0')
+	  readNextCommand();
+	initTokenizer();
+	return 1;
+  }
+  return 0;
+}
+
+void advance() {
   memset(token, '\0', sizeof(token));
+  if(!hasMoreToken()){
+	if(!readNextCommand()){
+	  EOF_ = 1;
+	  return;
+	}
+  }
+  
+  int pos = 0, len = strlen(cmd);
   while(commandCur < len){
 	if(cmd[commandCur] == '"'){
 	  isStr = !isStr;
-	  ++commandCur;
-	  if(!isStr)
-		return "STRING_CONST";
+	  token[pos++] = cmd[commandCur++];
+	  if(!isStr) break;
 	  continue;
 	}
 	if(!isStr){
@@ -103,21 +150,24 @@ char *tokenType() {
 		break;
 	  }
 	  if(checkSymbol(cmd[commandCur])){
-		if(!pos){
-		  token[0] = cmd[commandCur++];
-		  return "SYMBOL";
-		}else
-		  break;
+		if(!pos) token[0] = cmd[commandCur++]; 
+		break;
 	  }
 	}
     token[pos++] = cmd[commandCur++];
   }
+}
 
+char *tokenType() {
   if(isspace(token[0]) || strlen(token) == 0)
 	return "NULL";
 
   if(checkKeyword(token))
 	return "KEYWORD";
+  else if(token[0] == '"')
+	return "STRING_CONST";
+  else if(!isalnum(token[0]))
+	return "SYMBOL";
   else if(checkIsNumber(token))
 	return "INT_CONST";
   else
@@ -125,12 +175,12 @@ char *tokenType() {
 }
 
 char *keyWord() {
-  char keyword[128];
+  char *kw = malloc(128 * sizeof(char *));
   int pos = 0, cur = 0, len = strlen(token);
   while(cur < len) {
-	keyword[pos++] = toupper(token[cur++]);
+    kw[pos++] = toupper(token[cur++]);
   }
-  return keyword;
+  return kw;
 }
 
 char symbol() {
@@ -146,6 +196,11 @@ int intVal() {
 }
 
 char *stringVal() {
-  return token;
+  char *strVal = malloc(strlen(token) * sizeof(char *));
+  int cur = 1, pos = 0, len = strlen(token);
+  while(cur < len-1) {
+    strVal[pos++] = token[cur++];
+  }
+  return strVal;
 }
 

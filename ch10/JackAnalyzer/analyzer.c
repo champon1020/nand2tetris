@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include "sub.h"
 #include "tokenizer.h"
+#include "compilationEngine.h"
 
 void allocateString(char *src, char *org, int start){
   int cur = 0;
@@ -89,72 +90,19 @@ int endWith(char *str, char *suffix){
   return !strcmp(ext, suffix);
 }
 
-bool isComment = false;
-char buf[4096];
-
-void modifyCommand(){
-  int cur = 0, len = strlen(buf);
-  while(cur < len && isspace(buf[cur])) ++cur;
-  
-  int pos = 0;
-  while(cur < len && buf[cur] != '\n'){
-	if(buf[cur] == '/' && buf[cur+1] == '*'){
-	  isComment = true;
-	  cur += 2;
-	  continue;
-	}
-	if(buf[cur] == '*' && buf[cur+1] == '/'){
-	  isComment = false;
-	  memset(cmd, '\0', sizeof(cmd));
-	  cur += 2;
-	  continue;
-	}
-	if(buf[cur] == '/' && buf[cur+1] == '/'){
-	  buf[cur] = '\0';
-	  break;
-	}
-
-	cmd[pos++] = buf[cur++];
-  }
-}
-
 void process(char *fileName){
-  FILE *fp;
   if((fp = fopen(fileName, "r")) == NULL){
-	printf("Failed to open file\n");
+	printf("Failed to open input file %s\n", fileName);
 	exit(1);
   }
 
-  while(fgets(buf, sizeof(buf), fp) != NULL){
-	memset(cmd, '\0', sizeof(cmd));
-	modifyCommand();
-	if(isComment)
+  EOF_ = 0;
+  while(!EOF_){
+	advance();
+	char *tknType = tokenType();
+	if(!strcmp(tknType, "NULL"))
 	  continue;
-	if(cmd[0] == '\0')
-	  continue;
-
-	initTokenizer();
-	while(hasMoreToken()){
-	  char *tknType = tokenType();
-	  if(!strcmp(tknType, "NULL"))
-		continue;
-	  if(!strcmp(tknType, "KEYWORD")){
-		// some process
-	  }
-	  if(!strcmp(tknType, "SYMBOL")){
-		// some process
-	  }
-	  if(!strcmp(tknType, "IDENTIFIER")){
-		// some process
-	  }
-	  if(!strcmp(tknType, "INT_CONST")){
-		// some process
-	  }
-	  if(!strcmp(tknType, "STRING_CONST")){
-		// some process
-	  }
-	  printf("%s: %s\n", tknType, token);
-	}
+	printf("%s\n", token);
   }
 }
 
@@ -166,17 +114,23 @@ int main(int argc, char *argv[]){
 
   char *fileName = argv[1];
   if(endWith(fileName, ".jack")){
+	char *buf = malloc(sizeof(char *) * 100);
 	char *outputFileName = malloc(sizeof(char *) * 100);
-	setOutputFileName(dirname(fileName), outputFileName);
+	sprintf(buf, "%s/%s.xml", dirname(fileName), basename(fileName));
+	allocateString(outputFileName, buf, 0);
+	
+	if((ofp = fopen(outputFileName, "w")) == NULL){
+	  printf("Failed to open output file %s\n", outputFileName);
+	  exit(1);
+	}
 
 	process(fileName);
-	
 	printf("FILE: %s, OUTPUT: %s\n", fileName, outputFileName);
   }else{
 	DIR *dir;
 	struct dirent *dp;
 	if((dir = opendir(fileName)) == NULL){
-	  printf("Cannot open dir\n");
+	  printf("Failed to open input dir %s\n", fileName);
 	  exit(1);
 	}
 	for(dp = readdir(dir); dp != NULL; dp = readdir(dir)){
@@ -186,8 +140,12 @@ int main(int argc, char *argv[]){
 	  allocateString(outputFileName, buf, 0);
 
 	  if(endWith(dp->d_name, ".jack")){
-		// some process
+		if((ofp = fopen(outputFileName, "w")) == NULL){
+		  printf("Failed to open output file %s\n", outputFileName);
+		  exit(1);
+		}
 		
+		// some process
 		printf("FILE: %-20s, OUTPUT: %-20s\n", dp->d_name, outputFileName);
 	  }
 	}
