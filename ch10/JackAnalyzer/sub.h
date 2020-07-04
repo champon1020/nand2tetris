@@ -2,5 +2,6 @@
 #define _INCLUDE_SUB_H_
 
 char cmd[4096];
+char token[4096];
 
 #endif //_INCLUDE_SUB_H_

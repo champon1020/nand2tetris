@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
@@ -8,6 +9,7 @@ bool hasMoreToken();
 bool checkSymbol(char c);
 bool checkKeyword(char *s);
 char *tokenType();
+char *keyWord();
 
 int commandCur = 0;
 
@@ -86,8 +88,7 @@ bool isStr = false;
 
 char *tokenType() {
   int pos = 0, len = strlen(cmd);
-  char tkn[4096];
-  memset(tkn, '\0', sizeof(tkn));
+  memset(token, '\0', sizeof(token));
   while(commandCur < len){
 	if(cmd[commandCur] == '"'){
 	  isStr = !isStr;
@@ -103,24 +104,48 @@ char *tokenType() {
 	  }
 	  if(checkSymbol(cmd[commandCur])){
 		if(!pos){
-		  ++commandCur;
+		  token[0] = cmd[commandCur++];
 		  return "SYMBOL";
 		}else
 		  break;
 	  }
 	}
-	tkn[pos++] = cmd[commandCur++];
+    token[pos++] = cmd[commandCur++];
   }
 
-  if(isspace(tkn[0]) || strlen(tkn) == 0)
+  if(isspace(token[0]) || strlen(token) == 0)
 	return "NULL";
-  printf("%s ", tkn);
 
-  if(checkKeyword(tkn))
+  if(checkKeyword(token))
 	return "KEYWORD";
-  else if(checkIsNumber(tkn))
+  else if(checkIsNumber(token))
 	return "INT_CONST";
   else
 	return "IDENTIFIER";
+}
+
+char *keyWord() {
+  char keyword[128];
+  int pos = 0, cur = 0, len = strlen(token);
+  while(cur < len) {
+	keyword[pos++] = toupper(token[cur++]);
+  }
+  return keyword;
+}
+
+char symbol() {
+  return token[0];
+}
+
+char *identifier() {
+  return token;
+}
+
+int intVal() {
+  return atoi(token);
+}
+
+char *stringVal() {
+  return token;
 }
 

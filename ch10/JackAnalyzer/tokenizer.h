@@ -6,5 +6,10 @@
 void initTokenizer();
 bool hasMoreToken();
 char *tokenType();
+char *keyWord();
+char symbol();
+char *identifier();
+int inVal();
+char *stringVal();
 
 #endif //_INCLUDE_TOKENIZER_H_

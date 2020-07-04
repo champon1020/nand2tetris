@@ -133,13 +133,27 @@ void process(char *fileName){
 	if(cmd[0] == '\0')
 	  continue;
 
-	printf("[COMMAND]: %s\n", cmd);
 	initTokenizer();
 	while(hasMoreToken()){
 	  char *tknType = tokenType();
 	  if(!strcmp(tknType, "NULL"))
 		continue;
-	  printf("%s\n", tknType);
+	  if(!strcmp(tknType, "KEYWORD")){
+		// some process
+	  }
+	  if(!strcmp(tknType, "SYMBOL")){
+		// some process
+	  }
+	  if(!strcmp(tknType, "IDENTIFIER")){
+		// some process
+	  }
+	  if(!strcmp(tknType, "INT_CONST")){
+		// some process
+	  }
+	  if(!strcmp(tknType, "STRING_CONST")){
+		// some process
+	  }
+	  printf("%s: %s\n", tknType, token);
 	}
   }
 }
