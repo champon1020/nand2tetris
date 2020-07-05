@@ -102,7 +102,7 @@ void process(char *fileName){
 	char *tknType = tokenType();
 	if(!strcmp(tknType, "NULL"))
 	  continue;
-	printf("%s\n", token);
+	compileClass();
   }
 }
 
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]){
   if(endWith(fileName, ".jack")){
 	char *buf = malloc(sizeof(char *) * 100);
 	char *outputFileName = malloc(sizeof(char *) * 100);
-	sprintf(buf, "%s/%s.xml", dirname(fileName), basename(fileName));
+	sprintf(buf, "%s/%s.xml", dirname(fileName), removeExtFromPath(basename(fileName)));
 	allocateString(outputFileName, buf, 0);
 	
 	if((ofp = fopen(outputFileName, "w")) == NULL){

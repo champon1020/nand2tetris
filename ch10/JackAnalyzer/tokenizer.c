@@ -156,6 +156,10 @@ void advance() {
 	}
     token[pos++] = cmd[commandCur++];
   }
+
+  if(!strcmp(tokenType(), "NULL")){
+	advance();
+  }
 }
 
 char *tokenType() {
