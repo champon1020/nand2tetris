@@ -60,13 +60,13 @@ void compileClass() {
 	if(!strcmp(keyWord(), "STATIC") ||
 	   !strcmp(keyWord(), "FIELD")){
 	  compileClassVarDec();
-	}
-	if(!strcmp(keyWord(), "CONSTRUCTOR") ||
+	}else if(!strcmp(keyWord(), "CONSTRUCTOR") ||
 	   !strcmp(keyWord(), "FUNCTION") ||
 	   !strcmp(keyWord(), "METHOD")){
 	  compileSubroutine();
+	}else{
+	  break;
 	}
-	break;
   }
 
   // }
@@ -94,7 +94,7 @@ void compileClassVarDec() {
 	writeTerminal("identifier", token, layer);
 	advance();
 	
-	if(!strcmp(tokenType(), "SYMBOL")){
+	if(!strcmp(tokenType(), "SYMBOL") && symbol() == ','){
 	  writeTerminal("symbol", token, layer);
 	  advance();
 	}
@@ -112,10 +112,14 @@ void compileSubroutine() {
 
   // keyword
   writeTerminal("keyword", token, layer);
+  int isConstructor = !strcmp(token, "constructor");
   advance();
 
-  // type
-  writeTerminal("keyword", token, layer);
+  // type or constructor name
+  if(isConstructor)
+	writeTerminal("identifier", token, layer);
+  else
+	writeTerminal("keyword", token, layer);
   advance();
 
   // name
@@ -133,23 +137,27 @@ void compileSubroutine() {
   advance();
 
   // subroutineBody
-  writeStartTag("subroutineBody", layer++);
-  // {
-  writeTerminal("symbol", token, layer);
-  advance();
-  
-  while(!strcmp(tokenType(), "KEYWORD")){
-	if(!strcmp(keyWord(), "VAR")){
-	  compileVarDec();
-	}else{
-	  compileStatements();
+  {
+	writeStartTag("subroutineBody", layer++);
+	
+	// {
+	writeTerminal("symbol", token, layer);
+	advance();
+	
+	while(!strcmp(tokenType(), "KEYWORD")){
+	  if(!strcmp(keyWord(), "VAR")){
+		compileVarDec();
+	  }else{
+		compileStatements();
+	  }
 	}
-  }
 
-  // }
-  writeTerminal("symbol", token, layer);
-  advance();
-  writeEndTag("subroutineBody", --layer);
+	// }
+	writeTerminal("symbol", token, layer);
+	advance();
+	
+	writeEndTag("subroutineBody", --layer);
+  }
   
   writeEndTag("subroutineDec", --layer);
 }
@@ -215,18 +223,18 @@ void compileStatements() {
   while(!strcmp(tokenType(), "KEYWORD")){
 	if(!strcmp(keyWord(), "LET")){
 	  compileLet();
-	}
-	if(!strcmp(keyWord(), "IF")){
+	}else if(!strcmp(keyWord(), "IF")){
 	  compileIf();
-	}
-	if(!strcmp(keyWord(), "DO")){
+	}else if(!strcmp(keyWord(), "DO")){
 	  compileDo();
-	}
-	if(!strcmp(keyWord(), "WHILE")){
+	}else if(!strcmp(keyWord(), "WHILE")){
 	  compileWhile();
-	}
-	if(!strcmp(keyWord(), "RETURN")){
+	}else if(!strcmp(keyWord(), "RETURN")){
 	  compileReturn();
+	}else{
+	  printf("%s\n", token);
+	  exit(1);
+	  break;
 	}
   }
 
@@ -250,7 +258,7 @@ void compileExpression() {
 	   symbol() == '>' ||
 	   symbol() == '='){
 	  
-	  writeTerminal("symbol", token, layer);
+	  writeTerminal("symbol", convertSymbol(token), layer);
 	  advance();
 	  
 	  compileTerm();
@@ -305,6 +313,8 @@ void compileTerm() {
 		  (className | varName) . subroutineName ( expressionList)
 		*/
 		compileSubroutineCall(identifier);
+	  }else{
+		writeTerminal("identifier", identifier, layer);
 	  }
 	}else{
 	  // varName
@@ -336,6 +346,9 @@ void compileTerm() {
 
 	  compileTerm();
 	}
+  }else if(!strcmp(tokenType(), "KEYWORD")){
+	writeTerminal("keyword", token, layer);
+	advance();
   }else{
 	printf("ERROR: infinite loop\n");
 	printf("%s %s\n", tokenType(), token);
@@ -372,7 +385,7 @@ void compileSubroutineCall(char *firstIdentifier) {
 void compileExpressionList(){
   writeStartTag("expressionList", layer++);
   
-  while(strcmp(tokenType(), "SYMBOL")){
+  while(!(!strcmp(tokenType(), "SYMBOL") && symbol() == ')')){
 	compileExpression();
 
 	// ,
@@ -402,11 +415,13 @@ void compileLet() {
   if(!strcmp(tokenType(), "SYMBOL") && symbol() == '['){
 	// [
 	writeTerminal("symbol", token, layer);
+	advance();
 
 	compileExpression();
 
 	// ]
 	writeTerminal("symbol", token, layer);
+	advance();
   }
 
   // =
@@ -449,7 +464,7 @@ void compileIf() {
   writeTerminal("symbol", token, layer);
   advance();
 
-  if(!strcmp(tokenType(), "KEYWORD") && !strcmp(keyWord(), "else")) {
+  if(!strcmp(tokenType(), "KEYWORD") && !strcmp(token, "else")) {
 	// else
 	writeTerminal("keyword", token, layer);
 	advance();

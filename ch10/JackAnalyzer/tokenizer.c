@@ -48,6 +48,31 @@ bool checkSymbol(char c){
   return false;
 }
 
+char *convertSymbol(char *symbol){
+  if(!strcmp(symbol, "<")){
+	return "&lt;";
+  }
+  if(!strcmp(symbol, ">")){
+	return "&gt;";
+  }
+  if(!strcmp(symbol, "<=")){
+	return "&le;";
+  }
+  if(!strcmp(symbol, ">=")){
+	return "&ge;";
+  }
+  if(!strcmp(symbol, "&")){
+	return "&amp;";
+  }
+
+  int pos = 0, cur = 0;
+  char *res = malloc(sizeof(char *) * 16);
+  while(cur < strlen(symbol)){
+	res[pos++] = symbol[cur++];
+  }
+  return res;
+}
+
 bool checkKeyword(char *s){
   if(!strcmp(s, "class") ||
 	 !strcmp(s, "constructor") ||

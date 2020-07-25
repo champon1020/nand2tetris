@@ -7,6 +7,7 @@ void initTokenizer();
 bool hasMoreToken();
 bool checkKeyword();
 void advance();
+char *convertSymbol();
 char *tokenType();
 char *keyWord();
 char symbol();
