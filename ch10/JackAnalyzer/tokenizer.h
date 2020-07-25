@@ -5,6 +5,7 @@
 
 void initTokenizer();
 bool hasMoreToken();
+bool checkKeyword();
 void advance();
 char *tokenType();
 char *keyWord();

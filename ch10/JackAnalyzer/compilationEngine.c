@@ -18,6 +18,8 @@ void compileExpression();
 void compileTerm();
 void compileExpressionList();
 
+void compileSubroutineCall();
+
 
 int layer = 0;
 
@@ -81,20 +83,21 @@ void compileClassVarDec() {
   advance();
 
   // type
-  writeTerminal("identifier", token, layer);
+  if(checkKeyword(token))
+	writeTerminal("keyword", token, layer);
+  else
+	writeTerminal("identifier", token, layer);
   advance();
 
   // name
-  bool flg = false;
-  while(!strcmp(tokenType(), "IDENTIFIER") ||
-		(!strcmp(tokenType(), "SYMBOL") && symbol() == ',')){
-	if(flg){
+  while(!strcmp(tokenType(), "IDENTIFIER")){
+	writeTerminal("identifier", token, layer);
+	advance();
+	
+	if(!strcmp(tokenType(), "SYMBOL")){
 	  writeTerminal("symbol", token, layer);
 	  advance();
 	}
-    flg = true;
-	writeTerminal("identifier", token, layer);
-	advance();
   }
 
   // ;
@@ -112,7 +115,7 @@ void compileSubroutine() {
   advance();
 
   // type
-  writeTerminal("identifier", token, layer);
+  writeTerminal("keyword", token, layer);
   advance();
 
   // name
@@ -138,10 +141,8 @@ void compileSubroutine() {
   while(!strcmp(tokenType(), "KEYWORD")){
 	if(!strcmp(keyWord(), "VAR")){
 	  compileVarDec();
-	}
-	if(!strcmp(keyWord(), "LET")){
+	}else{
 	  compileStatements();
-	  break;
 	}
   }
 
@@ -154,22 +155,25 @@ void compileSubroutine() {
 }
 
 void compileParameterList() {
-  bool flg = false;
-  while(!strcmp(tokenType(), "IDENTIFIER") ||
-		(!strcmp(tokenType(), "SYMBOL") && symbol() == ',')){
-	if(!flg) {
-	  writeStartTag("parameterList", layer++);
-	}else{
+  writeStartTag("parameterList", layer++);
+
+  while(!strcmp(tokenType(), "KEYWORD")){
+	// type
+	writeTerminal("keyword", token, layer);
+	advance();
+	
+	// varName
+	writeTerminal("identifier", token, layer);
+	advance();
+
+	if(!strcmp(tokenType(), "SYMBOL") && symbol() == ','){
+	  // ,
 	  writeTerminal("symbol", token, layer);
 	  advance();
 	}
-    flg = true;
-	writeTerminal("identifier", token, layer);
-	advance();
   }
 
-  if(flg)
-	writeEndTag("parameterList", --layer);
+  writeEndTag("parameterList", --layer);
 }
 
 void compileVarDec() {
@@ -180,19 +184,22 @@ void compileVarDec() {
   advance();
 
   // type
-  writeTerminal("identifier", token, layer);
+  if(checkKeyword(token))
+	writeTerminal("keyword", token, layer);
+  else
+	writeTerminal("identifier", token, layer);
   advance();
 
-  bool flg = false;
-  while(!strcmp(tokenType(), "IDENTIFIER") ||
-		(!strcmp(tokenType(), "SYMBOL") && symbol() == ',')){
-	if(flg) {
+  while(!strcmp(tokenType(), "IDENTIFIER")){
+	// varName
+	writeTerminal("identifier", token, layer);
+	advance();
+
+	// ,
+	if(!strcmp(tokenType(), "SYMBOL") && symbol() == ','){
 	  writeTerminal("symbol", token, layer);
 	  advance();
 	}
-	flg = true;
-	writeTerminal("identifier", token, layer);
-	advance();
   }
 
   // ;
@@ -229,15 +236,153 @@ void compileStatements() {
 void compileExpression() {
   writeStartTag("expression", layer++);
 
-  
+  compileTerm();
+
+  if(!strcmp(tokenType(), "SYMBOL")){
+	// + - * / etc...
+	if(symbol() == '+' ||
+	   symbol() == '-' ||
+	   symbol() == '*' ||
+	   symbol() == '/' ||
+	   symbol() == '&' ||
+	   symbol() == '|' ||
+	   symbol() == '<' ||
+	   symbol() == '>' ||
+	   symbol() == '='){
+	  
+	  writeTerminal("symbol", token, layer);
+	  advance();
+	  
+	  compileTerm();
+	}
+  }
 
   writeEndTag("expression", --layer);
 }
 
 void compileTerm() {
+  writeStartTag("term", layer++);
+
+  if(!strcmp(tokenType(), "INT_CONST")){
+	/*
+	  integerConst
+	*/
+	writeTerminal("integerConstant", token, layer);
+	advance();
+  }else if(!strcmp(tokenType(), "STRING_CONST")){
+	/* 
+	   stringConst
+	*/
+	writeTerminal("stringConstant", stringVal(), layer);
+	advance();
+  }else if(!strcmp(tokenType(), "IDENTIFIER")){
+	char *identifier = malloc(sizeof(strlen(token)));
+	strcpy(identifier, token);
+	advance();
+
+	if(!strcmp(tokenType(), "SYMBOL")){
+	  if(symbol() == '['){
+		/*
+		  varName [ expression ]
+		*/
+
+		// varName
+		writeTerminal("identifier", identifier, layer);
+	  
+		// [
+		writeTerminal("symbol", token, layer);
+		advance();
+
+		compileExpression();
+
+		//[
+		writeTerminal("symbol", token, layer);
+		advance();
+	  }else if(symbol() == '(' || symbol() == '.'){
+		/*
+		  subroutineName ( expressionList )
+		  or
+		  (className | varName) . subroutineName ( expressionList)
+		*/
+		compileSubroutineCall(identifier);
+	  }
+	}else{
+	  // varName
+	  writeTerminal("identifier", identifier, layer);
+	}
+  }else if(!strcmp(tokenType(), "SYMBOL")){
+	if(symbol() == '('){
+	  /* 
+		 ( expression )
+	  */
+	  
+	  // (
+	  writeTerminal("symbol", token, layer);
+	  advance();
+
+	  compileExpression();
+
+	  // )
+	  writeTerminal("symbol", token, layer);
+	  advance();
+	}else{
+	  /*
+		unaryOp term
+	  */
+	  
+	  // - or ~
+	  writeTerminal("symbol", token, layer);
+	  advance();
+
+	  compileTerm();
+	}
+  }else{
+	printf("ERROR: infinite loop\n");
+	printf("%s %s\n", tokenType(), token);
+	exit(1);
+  }
+
+  writeEndTag("term", --layer);
+}
+
+void compileSubroutineCall(char *firstIdentifier) {
+  writeTerminal("identifier", firstIdentifier, layer);
+
+  if(symbol() == '.'){
+	// .
+	writeTerminal("symbol", token, layer);
+	advance();
+
+	// subroutineName
+	writeTerminal("identifier", token, layer);
+	advance();
+  }
+  
+  // (
+  writeTerminal("symbol", token, layer);
+  advance();
+  
+  compileExpressionList();
+	
+  // )
+  writeTerminal("symbol", token, layer);
+  advance();
 }
 
 void compileExpressionList(){
+  writeStartTag("expressionList", layer++);
+  
+  while(strcmp(tokenType(), "SYMBOL")){
+	compileExpression();
+
+	// ,
+	if(!strcmp(tokenType(), "SYMBOL") && symbol() == ','){
+	  writeTerminal("symbol", token, layer);
+	  advance();
+	}
+  }
+
+  writeEndTag("expressionList", --layer);
 }
 
 void compileLet() {
@@ -251,7 +396,9 @@ void compileLet() {
   writeTerminal("identifier", token, layer);
   advance();
 
-  // [exp]
+  /*
+	[ expression ]
+  */
   if(!strcmp(tokenType(), "SYMBOL") && symbol() == '['){
 	// [
 	writeTerminal("symbol", token, layer);
@@ -267,6 +414,10 @@ void compileLet() {
   advance();
 
   compileExpression();
+
+  // ;
+  writeTerminal("symbol", token, layer);
+  advance();
 
   writeEndTag("letStatement", --layer);
 }
@@ -298,7 +449,7 @@ void compileIf() {
   writeTerminal("symbol", token, layer);
   advance();
 
-  if(!strcmp(tokenType(), "KEYWORD") && !strcmp(keyword(), "else")) {
+  if(!strcmp(tokenType(), "KEYWORD") && !strcmp(keyWord(), "else")) {
 	// else
 	writeTerminal("keyword", token, layer);
 	advance();
@@ -324,7 +475,11 @@ void compileDo() {
   writeTerminal("keyword", token, layer);
   advance();
 
-  compileSubroutine();
+  char *identifier = malloc(sizeof(strlen(token)));
+  strcpy(identifier, token);
+  advance();
+  
+  compileSubroutineCall(identifier);
 
   // ;
   writeTerminal("symbol", token, layer);
@@ -370,7 +525,9 @@ void compileReturn() {
   writeTerminal("keyword", token, layer);
   advance();
 
-  compileExpression();
+  if(strcmp(tokenType(), "SYMBOL")){
+	compileExpression();
+  }
 
   // ;
   writeTerminal("symbol", token, layer);
