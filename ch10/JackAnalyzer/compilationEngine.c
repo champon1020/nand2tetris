@@ -227,7 +227,17 @@ void compileStatements() {
 }
 
 void compileExpression() {
+  writeStartTag("expression", layer++);
+
   
+
+  writeEndTag("expression", --layer);
+}
+
+void compileTerm() {
+}
+
+void compileExpressionList(){
 }
 
 void compileLet() {
@@ -242,10 +252,11 @@ void compileLet() {
   advance();
 
   // [exp]
-  if(!strcmp(tokenType(), "SYMBOL") &&
-	 symbol() == '['){
+  if(!strcmp(tokenType(), "SYMBOL") && symbol() == '['){
 	// [
 	writeTerminal("symbol", token, layer);
+
+	compileExpression();
 
 	// ]
 	writeTerminal("symbol", token, layer);
@@ -255,19 +266,115 @@ void compileLet() {
   writeTerminal("symbol", token, layer);
   advance();
 
-  
+  compileExpression();
 
   writeEndTag("letStatement", --layer);
 }
 
 void compileIf() {
+  writeStartTag("ifStatement", layer++);
+
+  // if
+  writeTerminal("keyword", token, layer);
+  advance();
+
+  // (
+  writeTerminal("symbol", token, layer);
+  advance();
+
+  compileExpression();
+
+  // )
+  writeTerminal("symbol", token, layer);
+  advance();
+
+  // {
+  writeTerminal("symbol", token, layer);
+  advance();
+
+  compileStatements();
+
+  // }
+  writeTerminal("symbol", token, layer);
+  advance();
+
+  if(!strcmp(tokenType(), "KEYWORD") && !strcmp(keyword(), "else")) {
+	// else
+	writeTerminal("keyword", token, layer);
+	advance();
+
+	// {
+	writeTerminal("symbol", token, layer);
+	advance();
+
+	compileStatements();
+
+	// }
+	writeTerminal("symbol", token, layer);
+	advance();
+  }
+  
+  writeEndTag("ifStatement", --layer);
 }
 
 void compileDo() {
+  writeStartTag("doStatement", layer++);
+
+  // do
+  writeTerminal("keyword", token, layer);
+  advance();
+
+  compileSubroutine();
+
+  // ;
+  writeTerminal("symbol", token, layer);
+  advance();
+
+  writeEndTag("doStatement", --layer);
 }
 
 void compileWhile() {
+  writeStartTag("whileStatement", layer++);
+
+  // while
+  writeTerminal("keyword", token, layer);
+  advance();
+
+  // (
+  writeTerminal("symbol", token, layer);
+  advance();
+
+  compileExpression();
+
+  // )
+  writeTerminal("symbol", token, layer);
+  advance();
+
+  // {
+  writeTerminal("symbol", token, layer);
+  advance();
+
+  compileStatements();
+
+  // }
+  writeTerminal("symbol", token, layer);
+  advance();
+
+  writeEndTag("whileStatement", --layer);
 }
 
 void compileReturn() {
+  writeStartTag("returnStatement", layer++);
+
+  // return
+  writeTerminal("keyword", token, layer);
+  advance();
+
+  compileExpression();
+
+  // ;
+  writeTerminal("symbol", token, layer);
+  advance();
+
+  writeEndTag("returnStatement", --layer);
 }
