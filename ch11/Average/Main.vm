@@ -1,0 +1,8 @@
+  push local 1
+  push local 2
+  push local 3
+  push local 4
+  lt
+  add
+  add
+  Math.divide
